@@ -63,7 +63,7 @@ jobs:
         run: |
           python - <<'PY'
           from ci_agent.agent import build_call
-          print(build_call("CI_landscape", entities=["RAFT, Inc.", "Palantir"], fmt="markdown"))
+          print(build_call("CI_landscape", entities=["Company A", "Company B"], fmt="markdown"))
           PY
 
   docker:

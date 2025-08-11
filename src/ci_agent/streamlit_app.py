@@ -1,9 +1,9 @@
 import asyncio
 import json
-from dotenv import load_dotenv
 
 import streamlit as st
 from agents import Runner
+from dotenv import load_dotenv
 
 from ci_agent.agent import build_call, ci_agent
 
@@ -43,16 +43,24 @@ with st.sidebar:
     entities_raw: str | None = None
     criteria_raw: str | None = None
     topic: str | None = None
+    urls_raw: str | None = None
+
+    # URL input available for all command types
+    urls_raw = st.text_area(
+        "Research URLs (comma-separated, max 3)",
+        placeholder="e.g., https://company1.com, https://company2.com, https://company3.com",
+        height=50,
+    )
 
     if cmd in {"CI_section", "CI_summary", "CI_playbook", "CI_price_band"}:
-        entity = st.text_input("Entity", placeholder="e.g., RAFT, Inc.")
+        entity = st.text_input("Entity", placeholder="e.g., Company Name")
 
     if cmd in {"CI_compare", "CI_landscape", "CI_matrix"}:
         entities_raw = st.text_area(
             "Entities (comma-separated)",
-            value="RAFT, Inc., Palantir, Anduril"
+            value="Company A, Company B, Company C"
             if cmd != "CI_compare"
-            else "RAFT, Inc., Palantir",
+            else "Company A, Company B",
             height=70,
         )
 
@@ -86,12 +94,20 @@ def _split_csv(s: str | None) -> list[str] | None:
 def _build_user_input() -> str:
     entities = _split_csv(entities_raw) if entities_raw else None
     criteria = _split_csv(criteria_raw) if criteria_raw else None
+    urls = _split_csv(urls_raw) if urls_raw else None
+
+    # Limit to max 3 URLs
+    if urls and len(urls) > 3:
+        urls = urls[:3]
+        st.warning("Limited to first 3 URLs.")
+
     return build_call(
         cmd,
         entities=entities,
         entity=entity,
         criteria=criteria,
         topic=topic,
+        urls=urls,
         fmt=fmt,
         length_hint=length_hint,
         tone=tone,

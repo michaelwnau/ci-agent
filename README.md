@@ -70,16 +70,16 @@ make run
 The CLI wraps the agent and builds a meta-language call based on arguments.
 
 ```bash
-python -m ci_agent.cli --cmd CI_landscape --entities "RAFT, Inc." Palantir Anduril --format markdown
+python -m ci_agent.cli --cmd CI_landscape --entities "Company A" "Company B" "Company C" --format markdown --urls https://example1.com https://example2.com https://example3.com
 ```
 
 Examples:
 
 ```bash
-python -m ci_agent.cli --cmd CI_compare --entities "RAFT, Inc." Palantir --format markdown
-python -m ci_agent.cli --cmd CI_matrix --entities "RAFT, Inc." Palantir Anduril --criteria "Evaluation speed" "ATO readiness" "Integration effort" "TCO 3yr"
+python -m ci_agent.cli --cmd CI_compare --entities "Company A" "Company B" --format markdown --urls https://example1.com https://example2.com
+python -m ci_agent.cli --cmd CI_matrix --entities "Company A" "Company B" "Company C" --criteria "Evaluation speed" "ATO readiness" "Integration effort" "TCO 3yr"
 python -m ci_agent.cli --cmd CI_signals --topic "AI-enabled knowledge management in U.S. federal market"
-python -m ci_agent.cli --cmd CI_playbook --entity "RAFT, Inc."
+python -m ci_agent.cli --cmd CI_playbook --entity "Company A" --urls https://example1.com
 ```
 
 ## Streamlit UI

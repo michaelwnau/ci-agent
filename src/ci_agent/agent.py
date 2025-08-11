@@ -64,9 +64,11 @@ Output:
 | …        | …              | …              |
 """
 
+
 class MatrixSpec(BaseModel):
     entities: list[str]
     criteria: list[str]
+
 
 @function_tool
 def validate_matrix_spec(spec: MatrixSpec) -> str:
@@ -80,9 +82,11 @@ def validate_matrix_spec(spec: MatrixSpec) -> str:
         return json.dumps({"ok": False, "error": "Need at least one criterion"})
     return json.dumps({"ok": True, "entities": spec.entities, "criteria": spec.criteria})
 
+
 class CIInputCheck(BaseModel):
     is_ci: bool
     why: str
+
 
 guardrail_agent = Agent(
     name="CI Guardrail",
@@ -90,10 +94,12 @@ guardrail_agent = Agent(
     output_type=CIInputCheck,
 )
 
+
 async def input_guardrail(ctx, agent, input_data):
     result = await Runner.run(guardrail_agent, input_data, context=ctx.context)
     final = result.final_output_as(CIInputCheck)
     return GuardrailFunctionOutput(output_info=final, tripwire_triggered=not final.is_ci)
+
 
 ci_agent = Agent(
     name="CI Agent",
@@ -102,6 +108,7 @@ ci_agent = Agent(
     input_guardrails=[InputGuardrail(guardrail_function=input_guardrail)],
 )
 
+
 def build_call(
     cmd: str,
     *,
@@ -109,6 +116,7 @@ def build_call(
     entity: str | None = None,
     criteria: list[str] | None = None,
     topic: str | None = None,
+    urls: list[str] | None = None,
     fmt: str = "markdown",
     length_hint: str = "standard",
     tone: str = "analyst",
@@ -120,6 +128,8 @@ def build_call(
         f"Tone: {tone}",
         f"Assumptions allowed: {'yes' if assumptions_ok else 'no'}",
     ]
+    if urls:
+        constraints.append(f"URLs to research: {', '.join(urls)}")
     header = "Constraints:\n- " + "\n- ".join(constraints) + "\n\n"
     if cmd == "CI_section":
         return header + f"CI_section({entity})"
@@ -142,16 +152,19 @@ def build_call(
         return header + f"CI_price_band({entity})"
     raise ValueError(f"Unknown cmd: {cmd}")
 
+
 async def demo():
     user_input = build_call(
         "CI_landscape",
-        entities=["RAFT, Inc.", "Palantir", "Anduril"],
+        entities=["Company A", "Company B", "Company C"],
+        urls=["https://example1.com", "https://example2.com", "https://example3.com"],
         fmt="markdown",
         length_hint="standard",
         tone="analyst",
     )
     result = await Runner.run(ci_agent, user_input)
     print(result.final_output)
+
 
 if __name__ == "__main__":
     asyncio.run(demo())

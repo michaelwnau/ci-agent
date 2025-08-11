@@ -11,21 +11,39 @@ help:
 
 .PHONY: setup
 setup:
-	uv venv .venv --python $(PY)
+	uv venv .venv --python $(PY) --clear
+ifeq ($(OS),Windows_NT)
+	powershell -ExecutionPolicy Bypass -Command "$$env:UV_PROJECT_ENVIRONMENT='.venv'; uv sync --all-extras --dev; uv pip install -e ."
+else
 	UV_PROJECT_ENVIRONMENT=.venv uv sync --all-extras --dev
+	UV_PROJECT_ENVIRONMENT=.venv uv pip install -e .
+endif
 
 .PHONY: lint
 lint:
+ifeq ($(OS),Windows_NT)
+	powershell -ExecutionPolicy Bypass -Command "$$env:UV_PROJECT_ENVIRONMENT='.venv'; uv run ruff check ."
+	powershell -ExecutionPolicy Bypass -Command "$$env:UV_PROJECT_ENVIRONMENT='.venv'; uv run ruff format --check ."
+else
 	UV_PROJECT_ENVIRONMENT=.venv uv run ruff check .
 	UV_PROJECT_ENVIRONMENT=.venv uv run ruff format --check .
+endif
 
 .PHONY: test
 test:
+ifeq ($(OS),Windows_NT)
+	powershell -ExecutionPolicy Bypass -Command "$$env:UV_PROJECT_ENVIRONMENT='.venv'; uv run pytest -q"
+else
 	UV_PROJECT_ENVIRONMENT=.venv uv run pytest -q
+endif
 
 .PHONY: run
 run:
+ifeq ($(OS),Windows_NT)
+	powershell -ExecutionPolicy Bypass -Command "$$env:UV_PROJECT_ENVIRONMENT='.venv'; uv run streamlit run src/ci_agent/streamlit_app.py"
+else
 	UV_PROJECT_ENVIRONMENT=.venv uv run streamlit run src/ci_agent/streamlit_app.py
+endif
 
 .PHONY: docker-build
 docker-build:

@@ -10,15 +10,23 @@ CI_META_LANGUAGE = """
 You are a competitive intelligence analyst. Follow the meta language below. If information is unknown,
 state assumptions explicitly and proceed.
 
+IMPORTANT: When URLs are provided in the "URLs to research" constraint, you MUST use those specific URLs
+as your primary sources of information. Base your analysis primarily on the content from these URLs.
+Do not rely on general knowledge unless specifically instructed or when the URLs don't contain relevant information.
+For each URL provided, extract relevant information about the entities and include this data in your analysis.
+Cite the specific URL when referencing information from it.
+
 When I say "CI_section(<entity>)", I mean:
 Produce a structured CI section for <entity> with: Summary (3–5 sentences), Strengths, Weaknesses, Opportunities, Threats.
+If URLs are provided, analyze those websites to extract factual information about the entity.
 
 When I say "CI_summary(<entity>)", I mean:
 Produce a 120–180 word executive summary of <entity>'s competitive positioning.
+If URLs are provided, base your summary on information from those sources.
 
 When I say "CI_compare(<A>, <B>)", I mean:
 Provide a side-by-side comparison of <A> and <B> covering market presence, technical capability, pricing posture,
-notable customers, and recent momentum signals.
+notable customers, and recent momentum signals. If URLs are provided, extract comparative information from those sources.
 
 When I say "CI_landscape(<list>)", I mean:
 Given a comma-separated list of entities, produce a market landscape that includes:
@@ -26,26 +34,32 @@ Given a comma-separated list of entities, produce a market landscape that includ
 2) a capability-by-entity table with Normalized Ratings (Low/Med/High) for: Data/AI, Platform maturity, Security/Compliance,
    Services scale, Partner ecosystem,
 3) a brief analyst note on differentiation and likely head-to-head matchups.
+If URLs are provided, use them to extract specific information about each entity's capabilities and positioning.
 
 When I say "CI_matrix(<list>, <criteria>)", I mean:
 Create a decision matrix scoring each entity in <list> against comma-separated <criteria>.
 Use a 1–5 score with a one-line rationale per cell and a total score.
+If URLs are provided, use them to determine accurate scores based on factual information.
 
 When I say "CI_signals(<topic>)", I mean:
 List near-term signals to watch for <topic> over the next 6–12 months, grouped as Product, Partnerships,
 Hiring, Contracts. For each signal, include why it matters and an indicative metric or proxy.
+If URLs are provided, extract current trends and announcements to inform your signals.
 
 When I say "CI_playbook(<entity>)", I mean:
 Provide three win themes, three land-and-expand plays, and three counter-moves against <entity> with concrete proof-points.
+If URLs are provided, analyze them to extract specific strengths, weaknesses, and market strategies.
 
 When I say "CI_price_band(<entity>)", I mean:
 State typical pricing posture (premium/market/discount), what drives it, and common bundling or TCV patterns.
-If unknown, infer with stated assumptions.
+If unknown, infer with stated assumptions. If URLs are provided, look for pricing information, customer testimonials,
+or market positioning that might indicate pricing strategy.
 
 Output policy:
 - Default to Markdown tables where appropriate.
 - If the caller requests "json" format, return valid JSON with fields mirroring the structure.
 - Always state assumptions when you infer.
+- When information is sourced from provided URLs, include a brief attribution.
 
 Few-shot anchors:
 Example A:
@@ -129,7 +143,8 @@ def build_call(
         f"Assumptions allowed: {'yes' if assumptions_ok else 'no'}",
     ]
     if urls:
-        constraints.append(f"URLs to research: {', '.join(urls)}")
+        url_list = "\n  - " + "\n  - ".join(urls)
+        constraints.append(f"URLs to research: {url_list}")
     header = "Constraints:\n- " + "\n- ".join(constraints) + "\n\n"
     if cmd == "CI_section":
         return header + f"CI_section({entity})"

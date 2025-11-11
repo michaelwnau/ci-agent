@@ -3,7 +3,19 @@
 FROM python:3.11-slim AS uv-base
 
 ARG UV_INSTALL_URL="https://astral.sh/uv/install.sh"
-RUN apt-get update && apt-get install -y --no-install-recommends \      curl ca-certificates build-essential \    && rm -rf /var/lib/apt/lists/* \    && curl -LsSf ${UV_INSTALL_URL} | sh \    && /root/.local/bin/uv --version
+ENV UV_INSTALL_URL=${UV_INSTALL_URL}
+# Install system deps and uv tool in a robust way. Fail fast on missing URL.
+RUN set -eux; \
+	export DEBIAN_FRONTEND=noninteractive; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		curl \
+		ca-certificates \
+		build-essential; \
+	rm -rf /var/lib/apt/lists/*; \
+	if [ -z "${UV_INSTALL_URL}" ]; then echo "UV_INSTALL_URL is not set" >&2; exit 1; fi; \
+	curl -fsSL "${UV_INSTALL_URL}" | sh; \
+	/root/.local/bin/uv --version
 
 ENV PATH="/root/.local/bin:${PATH}"
 ENV UV_LINK_MODE=copy
@@ -14,7 +26,8 @@ WORKDIR /app
 FROM uv-base AS builder
 
 COPY pyproject.toml ./
-COPY uv.lock ./ 2>/dev/null || true
+# uv.lock is present in the repository; copy it directly. (Previous form with shell redirection is invalid Dockerfile syntax.)
+COPY uv.lock ./
 
 RUN uv sync --all-extras --dev || true
 

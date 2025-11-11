@@ -40,6 +40,7 @@ ci-agent/
 - Python 3.11 or later
 - uv installed locally
 - Docker (optional for container build)
+ - Podman (recommended for local container runs) or Docker (used by CI)
 - An OpenAI-compatible API key if your Agents SDK requires it
 - GitHub account and repository if you intend to use GHCR publishing
 
@@ -72,6 +73,8 @@ The CLI wraps the agent and builds a meta-language call based on arguments.
 ```bash
 python -m ci_agent.cli --cmd CI_landscape --entities "Company A" "Company B" "Company C" --format markdown --urls https://example1.com https://example2.com https://example3.com
 ```
+
+Adding URLs with the `--urls` flag provides specific sources for the agent to research, significantly improving the accuracy and factual basis of the analysis. The agent will primarily use information from these sources.
 
 Examples:
 
@@ -107,6 +110,34 @@ export OPENAI_API_KEY=YOUR_KEY
 make docker-run
 # Open http://localhost:8501
 ```
+
+## Local container (Podman preferred)
+
+For local development we recommend using Podman where available. The repository provides both Podman-specific make targets and generic `container-*` targets which prefer Podman on Unix-like systems and fall back to Docker if Podman isn't installed.
+
+Build (preferred: podman):
+
+```bash
+# prefer Podman when available
+make container-build
+```
+
+Or explicitly with Podman:
+
+```bash
+make podman-build
+```
+
+Run the container locally (exposes port 8501):
+
+```bash
+export OPENAI_API_KEY=YOUR_KEY
+make container-run
+# or explicitly: make podman-run
+# Open http://localhost:8501
+```
+
+Note: GitHub Actions CI in `.github/workflows/ci.yml` continues to use Docker buildx and the docker/* actions for image build/publish. The Makefile keeps `docker-build` and `docker-run` targets for CI and Docker users.
 
 ## GitHub Actions CI
 

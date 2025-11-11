@@ -2,9 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 
 from agents import Agent, GuardrailFunctionOutput, InputGuardrail, Runner, function_tool
 from pydantic import BaseModel
+
+# Configure OpenRouter
+os.environ.setdefault("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+# Map OPENROUTER_API_KEY to OPENAI_API_KEY if not already set
+if "OPENROUTER_API_KEY" in os.environ and "OPENAI_API_KEY" not in os.environ:
+    os.environ["OPENAI_API_KEY"] = os.environ["OPENROUTER_API_KEY"]
+
 
 CI_META_LANGUAGE = """
 You are a competitive intelligence analyst. Follow the meta language below. If information is unknown,

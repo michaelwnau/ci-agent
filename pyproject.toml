@@ -1,7 +1,7 @@
 [project]
 name = "ci-agent"
 version = "0.1.0"
-description = "Competitive Intelligence Agent using the OpenAI Agents SDK and Meta Language"
+description = "Competitive Intelligence Agent using OpenRouter and Meta Language"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{name = "Your Name", email = "you@example.com"}]

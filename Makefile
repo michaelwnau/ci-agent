@@ -51,4 +51,4 @@ docker-build:
 
 .PHONY: docker-run
 docker-run:
-	docker run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest
+	docker run --rm -p 8501:8501 -e OPENROUTER_API_KEY ci-agent:latest

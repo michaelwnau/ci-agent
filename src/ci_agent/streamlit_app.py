@@ -12,7 +12,7 @@ load_dotenv()
 st.set_page_config(page_title="CI Agent", layout="wide")
 
 st.title("Competitive Intelligence Agent")
-st.caption("Meta Language + OpenAI Agents SDK • Streamlit UI")  # no emoji
+st.caption("Meta Language + OpenRouter • Streamlit UI")  # no emoji
 
 with st.sidebar:
     st.header("Request")

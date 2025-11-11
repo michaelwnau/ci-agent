@@ -1,10 +1,10 @@
 # CI Agent
 
-Competitive Intelligence Agent using the OpenAI Agents SDK, a Meta Language for CI tasks, Streamlit UI, uv for dependency management, ruff for linting, and Docker for containerized deployment. This repository also includes a GitHub Actions workflow for CI and image publishing.
+Competitive Intelligence Agent using OpenRouter, a Meta Language for CI tasks, Streamlit UI, uv for dependency management, ruff for linting, and Docker for containerized deployment. This repository also includes a GitHub Actions workflow for CI and image publishing.
 
 ## Features
 
-1. OpenAI Agents SDK based agent encapsulating a competitive intelligence meta-language.
+1. OpenRouter-based agent encapsulating a competitive intelligence meta-language.
 2. Streamlit graphical interface to invoke agent commands.
 3. uv for fast, reproducible dependency resolution and virtual environments.
 4. ruff for lint and format checks in local and CI workflows.
@@ -40,7 +40,7 @@ ci-agent/
 - Python 3.11 or later
 - uv installed locally
 - Docker (optional for container build)
-- An OpenAI-compatible API key if your Agents SDK requires it
+- An OpenRouter API key (sign up at https://openrouter.ai/)
 - GitHub account and repository if you intend to use GHCR publishing
 
 ## Quickstart (Local)
@@ -103,7 +103,7 @@ make docker-build
 Run the container:
 
 ```bash
-export OPENAI_API_KEY=YOUR_KEY
+export OPENROUTER_API_KEY=YOUR_KEY
 make docker-run
 # Open http://localhost:8501
 ```
@@ -119,14 +119,14 @@ The workflow `.github/workflows/ci.yml`:
 
 To enable GHCR pushes, ensure `packages: write` permission is available for the workflow and your repository is public or you have access rights.
 
-## OpenAI Agents SDK Integration
+## OpenRouter Integration
 
 The agent is defined in `src/ci_agent/agent.py` with:
 
 - A meta-language instruction block that maps CI_* calls to structured outputs.
 - Optional function tools using `@function_tool` for schema-validated actions.
 - An input guardrail that classifies whether a request is competitive-intelligence related.
-- Execution via `Runner.run(ci_agent, user_input)`.
+- Execution via `Runner.run(ci_agent, user_input)` using OpenRouter's API gateway.
 
 ## Development Notes
 
@@ -138,6 +138,7 @@ The agent is defined in `src/ci_agent/agent.py` with:
 
 - If `uv sync` fails inside Docker due to network constraints, try building again or ensure no corporate proxy blocks downloads.
 - If the Agents SDK import path differs, update the `openai-agents` dependency and `from agents import ...` import statements.
+- Ensure your `OPENROUTER_API_KEY` environment variable is set to use OpenRouter's API gateway.
 - For JSON output, ensure the requested `format` is `json` and that your model instructions return valid JSON.
 
 ## License

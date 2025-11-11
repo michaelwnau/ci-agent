@@ -6,8 +6,8 @@ help:
 	@echo "make lint         - run ruff"
 	@echo "make test         - run pytest"
 	@echo "make run          - run Streamlit UI locally"
-	@echo "make docker-build - build container"
-	@echo "make docker-run   - run container on :8501"
+	@echo "make podman-build - build container"
+	@echo "make podman-run   - run container on :8501"
 
 .PHONY: setup
 setup:
@@ -45,10 +45,10 @@ else
 	UV_PROJECT_ENVIRONMENT=.venv uv run streamlit run src/ci_agent/streamlit_app.py
 endif
 
-.PHONY: docker-build
-docker-build:
-	docker build -t ci-agent:latest .
+.PHONY: podman-build
+podman-build:
+	podman build -t ci-agent:latest .
 
-.PHONY: docker-run
-docker-run:
-	docker run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest
+.PHONY: podman-run
+podman-run:
+	podman run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest

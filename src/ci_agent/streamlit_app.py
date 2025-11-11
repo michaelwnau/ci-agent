@@ -46,6 +46,9 @@ with st.sidebar:
     urls_raw: str | None = None
 
     # URL input available for all command types
+    st.info(
+        "Enter specific URLs for the agent to research. The analysis will be based primarily on information from these sources."
+    )
     urls_raw = st.text_area(
         "Research URLs (comma-separated, max 3)",
         placeholder="e.g., https://company1.com, https://company2.com, https://company3.com",
@@ -100,6 +103,12 @@ def _build_user_input() -> str:
     if urls and len(urls) > 3:
         urls = urls[:3]
         st.warning("Limited to first 3 URLs.")
+
+    # Warn if no URLs are provided
+    if not urls:
+        st.warning(
+            "No research URLs provided. For more accurate and factual results, consider adding specific URLs to research."
+        )
 
     return build_call(
         cmd,

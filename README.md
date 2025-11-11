@@ -38,18 +38,45 @@ ci-agent/
 ## Prerequisites
 
 - Python 3.11 or later
-- uv installed locally
-- Docker (optional for container build)
- - Podman (recommended for local container runs) or Docker (used by CI)
-- An OpenAI-compatible API key if your Agents SDK requires it
+- `uv` installed locally (we use `uv` to manage the project virtualenv and dependencies)
+- Podman (recommended for local container runs) or Docker (used by CI)
+- (Optional) A Google API (Gemini) key for Google-based integrations. Add it locally to a `.env` file as `GOOGLE_API_KEY=your_key_here` and do NOT commit the `.env` file to the repository.
 - GitHub account and repository if you intend to use GHCR publishing
+
+Important: This repository manages all project dependencies with `uv`. Do not use `pip` directly to install project dependencies — use the `make setup` target or run `uv` commands as shown below so the `uv.lock` file stays authoritative and builds are reproducible.
 
 ## Quickstart (Local)
 
 1. Create environment and sync dependencies.
 
+Environment note: the app will read `GOOGLE_API_KEY` from a local `.env` (via `python-dotenv`) if present. Do not commit your `.env` file or your API keys to source control.
+
+Recommended (creates `.venv` and syncs deps via `uv`):
+
 ```bash
 make setup
+```
+
+If you want to install only the Google/Gemini SDK into the uv-managed environment (the `setup` target already installs all extras), you can run:
+
+Unix/macOS:
+
+```bash
+UV_PROJECT_ENVIRONMENT=.venv uv sync --all-extras --dev
+UV_PROJECT_ENVIRONMENT=.venv uv pip install google-generativeai
+```
+
+Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "$env:UV_PROJECT_ENVIRONMENT='.venv'; uv sync --all-extras --dev"
+powershell -ExecutionPolicy Bypass -Command "$env:UV_PROJECT_ENVIRONMENT='.venv'; uv pip install google-generativeai"
+```
+
+Alternatively, if you prefer to install the optional extras via pip as a fallback (not recommended for regular development), you can run:
+
+```bash
+python -m pip install '.[google]'
 ```
 
 2. Lint and test.

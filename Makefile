@@ -52,3 +52,33 @@ docker-build:
 .PHONY: docker-run
 docker-run:
 	docker run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest
+
+.PHONY: podman-build
+podman-build:
+	podman build -t ci-agent:latest .
+
+.PHONY: podman-run
+podman-run:
+	podman run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest
+
+# Generic container build/run helpers. On Unix-like systems these will prefer
+# podman when available, otherwise fall back to docker. On Windows make will
+# continue to use the explicit `docker-*` targets unless you call the
+# `podman-*` targets directly.
+.PHONY: container-build
+container-build:
+	@echo "Detecting container runtime (prefer podman)..."; \
+	if command -v podman >/dev/null 2>&1; then \
+		echo "Using podman"; podman build -t ci-agent:latest .; \
+	else \
+		echo "podman not found, falling back to docker"; docker build -t ci-agent:latest .; \
+	fi
+
+.PHONY: container-run
+container-run:
+	@echo "Detecting container runtime (prefer podman)..."; \
+	if command -v podman >/dev/null 2>&1; then \
+		echo "Using podman"; podman run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest; \
+	else \
+		echo "podman not found, falling back to docker"; docker run --rm -p 8501:8501 -e OPENAI_API_KEY ci-agent:latest; \
+	fi

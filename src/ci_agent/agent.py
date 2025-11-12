@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 
-from pydantic import BaseModel
 from agents import Agent, GuardrailFunctionOutput, InputGuardrail, Runner, function_tool
+from pydantic import BaseModel
 
 from ci_agent.call_builder import build_call
 
@@ -124,7 +124,6 @@ ci_agent = Agent(
     input_guardrails=[InputGuardrail(guardrail_function=input_guardrail)],
 )
 
-from ci_agent.call_builder import build_call
 
 
 async def demo():

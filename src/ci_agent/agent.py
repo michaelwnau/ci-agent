@@ -6,6 +6,8 @@ import json
 from agents import Agent, GuardrailFunctionOutput, InputGuardrail, Runner, function_tool
 from pydantic import BaseModel
 
+from ci_agent.call_builder import build_call
+
 CI_META_LANGUAGE = """
 You are a competitive intelligence analyst. Follow the meta language below. If information is unknown,
 state assumptions explicitly and proceed.
@@ -121,51 +123,6 @@ ci_agent = Agent(
     tools=[validate_matrix_spec],
     input_guardrails=[InputGuardrail(guardrail_function=input_guardrail)],
 )
-
-
-def build_call(
-    cmd: str,
-    *,
-    entities: list[str] | None = None,
-    entity: str | None = None,
-    criteria: list[str] | None = None,
-    topic: str | None = None,
-    urls: list[str] | None = None,
-    fmt: str = "markdown",
-    length_hint: str = "standard",
-    tone: str = "analyst",
-    assumptions_ok: bool = True,
-) -> str:
-    constraints = [
-        f"Format: {fmt}",
-        f"Length: {length_hint}",
-        f"Tone: {tone}",
-        f"Assumptions allowed: {'yes' if assumptions_ok else 'no'}",
-    ]
-    if urls:
-        url_list = "\n  - " + "\n  - ".join(urls)
-        constraints.append(f"URLs to research: {url_list}")
-    header = "Constraints:\n- " + "\n- ".join(constraints) + "\n\n"
-    if cmd == "CI_section":
-        return header + f"CI_section({entity})"
-    if cmd == "CI_summary":
-        return header + f"CI_summary({entity})"
-    if cmd == "CI_compare":
-        assert entities and len(entities) == 2
-        return header + f"CI_compare({entities[0]}, {entities[1]})"
-    if cmd == "CI_landscape":
-        assert entities and len(entities) >= 2
-        return header + "CI_landscape(" + ", ".join(entities) + ")"
-    if cmd == "CI_matrix":
-        assert entities and criteria
-        return header + "CI_matrix(" + ", ".join(entities) + ", " + ", ".join(criteria) + ")"
-    if cmd == "CI_signals":
-        return header + f"CI_signals({topic})"
-    if cmd == "CI_playbook":
-        return header + f"CI_playbook({entity})"
-    if cmd == "CI_price_band":
-        return header + f"CI_price_band({entity})"
-    raise ValueError(f"Unknown cmd: {cmd}")
 
 
 async def demo():

@@ -1,13 +1,22 @@
 import asyncio
 import json
+import os
 
 import streamlit as st
-from agents import Runner
 from dotenv import load_dotenv
 
-from ci_agent.agent import build_call, ci_agent
+# Import the lightweight prompt builder only (avoid importing the heavy
+# `agents` SDK or `ci_agent.agent` at module import time because those
+# imports may initialize OpenAI clients immediately and cause 401s when a
+# placeholder OPENAI_API_KEY is present). We'll import the full agent
+# machinery lazily inside `_run_agent_sync` only when the OpenAI path is
+# actually needed.
+from ci_agent.call_builder import build_call
 
 load_dotenv()
+
+# Read optional integration keys from the environment (loaded from local .env)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 st.set_page_config(page_title="CI Agent", layout="wide")
 
@@ -67,6 +76,14 @@ with st.sidebar:
             height=70,
         )
 
+        # If user provided exactly one entity for CI_compare, show a helper note
+        if cmd == "CI_compare" and entities_raw:
+            provided = [x.strip() for x in entities_raw.split(",") if x.strip()]
+            if len(provided) == 1:
+                st.info(
+                    f"Comparing to default baseline: Market (single entity provided: {provided[0]})"
+                )
+
     if cmd == "CI_matrix":
         criteria_raw = st.text_input(
             "Criteria (comma-separated)",
@@ -79,13 +96,32 @@ with st.sidebar:
         )
 
     st.markdown("---")
+    # Integrations section (detect presence of GOOGLE_API_KEY in local .env)
+    st.subheader("Integrations")
+    if GOOGLE_API_KEY:
+        use_google = st.checkbox(
+            "Enable Google API usage",
+            value=False,
+            help="Uses GOOGLE_API_KEY from your local .env (value is not shown).",
+        )
+    else:
+        st.info(
+            "Set `GOOGLE_API_KEY` in your local `.env` to enable Google API features (do not commit this file)."
+        )
+        use_google = False
+
+    # persist preference in session state for use when running
+    st.session_state["use_google"] = use_google
+
     run_btn = st.button("Run Agent", type="primary")
     clear_btn = st.button("Clear")
 
 if clear_btn:
     for k in list(st.session_state.keys()):
         del st.session_state[k]
-    st.experimental_rerun()
+    # Use `st.rerun()` which is the supported API in current Streamlit versions
+    # (older code used `st.experimental_rerun()` which may not exist).
+    st.rerun()
 
 
 def _split_csv(s: str | None) -> list[str] | None:
@@ -125,7 +161,39 @@ def _build_user_input() -> str:
 
 
 def _run_agent_sync(user_input: str) -> str:
-    return asyncio.run(Runner.run(ci_agent, user_input)).final_output
+    # Decide which backend to use. Guard access to session_state in case the
+    # Streamlit runtime hasn't initialized it yet.
+    try:
+        use_google = bool(st.session_state.get("use_google")) and bool(GOOGLE_API_KEY)
+    except Exception:
+        use_google = False
+
+    if use_google:
+        # Mark which key/source we used (non-secret). This helps debugging in
+        # the UI/logs without exposing any API key values.
+        st.session_state["ci_agent_key_source"] = "GOOGLE"
+        try:
+            from ci_agent.google_adapter import generate_from_prompt
+
+            return generate_from_prompt(user_input)
+        except Exception as e:
+            # Surface Google-specific errors clearly to the UI
+            raise RuntimeError(f"Google adapter error: {e}") from e
+
+    # Fallback: use the original agents/Runner path (this will import the
+    # heavy `agents` SDK and the `ci_agent.agent` module). Import lazily so we
+    # don't trigger OpenAI client initialization when the Google path is
+    # selected.
+    st.session_state["ci_agent_key_source"] = "OPENAI"
+    try:
+        import importlib
+
+        agents = importlib.import_module("agents")
+        agent_module = importlib.import_module("ci_agent.agent")
+        Runner = agents.Runner
+        return asyncio.run(Runner.run(agent_module.ci_agent, user_input)).final_output
+    except Exception as e:
+        raise RuntimeError(f"Agents/OpenAI path error: {e}") from e
 
 
 col_prompt, col_output = st.columns(2, gap="large")

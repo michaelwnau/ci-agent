@@ -47,7 +47,11 @@ def generate_from_prompt(prompt: str) -> str:
             candidates = []
             for m in available:
                 name = getattr(m, "name", None) or getattr(m, "model", None) or str(m)
-                methods = getattr(m, "supported_generation_methods", None) or getattr(m, "supported_methods", None) or []
+                methods = (
+                    getattr(m, "supported_generation_methods", None)
+                    or getattr(m, "supported_methods", None)
+                    or []
+                )
                 # Normalize method names to strings
                 method_names = []
                 for mm in methods:
@@ -58,11 +62,21 @@ def generate_from_prompt(prompt: str) -> str:
                         method_names.append(getattr(mm, "name", str(mm)))
 
                 # Prefer models that support generateContent (the ADK/generative API)
-                if any(x for x in ("generateContent", "generate_content", "generateContentV1") if x in method_names) or ("generateContent" in method_names) or ("chat" in method_names) or ("generate" in method_names):
+                if (
+                    any(
+                        x
+                        for x in ("generateContent", "generate_content", "generateContentV1")
+                        if x in method_names
+                    )
+                    or ("generateContent" in method_names)
+                    or ("chat" in method_names)
+                    or ("generate" in method_names)
+                ):
                     candidates.append((name, method_names))
 
             # Prefer Gemini models and newer minor versions when possible
             if candidates:
+
                 def score(nm):
                     s = 0
                     if "gemini" in nm:
@@ -78,7 +92,9 @@ def generate_from_prompt(prompt: str) -> str:
             else:
                 # fallback: pick the first model name if available
                 if available:
-                    first = getattr(available[0], "name", None) or getattr(available[0], "model", None)
+                    first = getattr(available[0], "name", None) or getattr(
+                        available[0], "model", None
+                    )
                     model = first
         except Exception:
             # If listing models fails (no permission / network), fall back to
@@ -135,9 +151,7 @@ def generate_from_prompt(prompt: str) -> str:
             return str(resp)
 
         # If we get here we couldn't find a supported API
-        raise RuntimeError(
-            "No supported generation method found in google.generativeai client"
-        )
+        raise RuntimeError("No supported generation method found in google.generativeai client")
     except Exception as e:
         raise RuntimeError(f"Google generation error: {e}") from e
 

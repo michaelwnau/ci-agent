@@ -1,10 +1,13 @@
 # CI Agent
 
-Competitive Intelligence Agent using the OpenAI Agents SDK, a Meta Language for CI tasks, Streamlit UI, uv for dependency management, ruff for linting, and Docker for containerized deployment. This repository also includes a GitHub Actions workflow for CI and image publishing.
+Competitive Intelligence Agent built around a meta-language for CI tasks, a Streamlit UI, simple Markdown for exportable reports,and reproducible dependency management with `uv`.
+
+Important change: this codebase has deprecated active use of Meta/OpenAI provider integrations and now prefers Google Generative (Gemini) integrations via the `google-generativeai` SDK / ADK where available. OpenAI-related code paths remain as legacy fallbacks in some places but are no longer the recommended or default runtime path.
 
 ## Features
 
-1. OpenAI Agents SDK based agent encapsulating a competitive intelligence meta-language.
+1. Google Generative (Gemini) / ADK integration (preferred) for generation and agent workflows. The repo supports the `google-generativeai` SDK and uses `GenerativeModel.generate_content` where available. BYOK.
+2. (Legacy) OpenAI Agents SDK integration — kept for backward compatibility but deprecated. New development should use the Google path.
 2. Streamlit graphical interface to invoke agent commands.
 3. uv for fast, reproducible dependency resolution and virtual environments.
 4. ruff for lint and format checks in local and CI workflows.
@@ -40,16 +43,16 @@ ci-agent/
 - Python 3.11 or later
 - `uv` installed locally (we use `uv` to manage the project virtualenv and dependencies)
 - Podman (recommended for local container runs) or Docker (used by CI)
-- (Optional) A Google API (Gemini) key for Google-based integrations. Add it locally to a `.env` file as `GOOGLE_API_KEY=your_key_here` and do NOT commit the `.env` file to the repository.
-- GitHub account and repository if you intend to use GHCR publishing
+- A Google Generative (Gemini) API key to enable the preferred runtime path. Add it locally to a `.env` file as `GOOGLE_API_KEY=your_key_here` and do NOT commit that file into the repo. If you have an ADK/enterprise setup, follow your org's auth guidance.
+- (Optional/legacy) An OpenAI-compatible key may still be present to exercise fallback code paths, but OpenAI usage is deprecated and not recommended for new runs.
 
-Important: This repository manages all project dependencies with `uv`. Do not use `pip` directly to install project dependencies — use the `make setup` target or run `uv` commands as shown below so the `uv.lock` file stays authoritative and builds are reproducible.
+Important: This repository manages all project dependencies with `uv`. Prefer `uv` commands or the provided `make` targets so the `uv.lock` file remains authoritative and builds are reproducible. Avoid direct `pip install` for project dependencies unless explicitly instructed.
 
 ## Quickstart (Local)
 
 1. Create environment and sync dependencies.
 
-Environment note: the app will read `GOOGLE_API_KEY` from a local `.env` (via `python-dotenv`) if present. Do not commit your `.env` file or your API keys to source control.
+Environment note: the app reads `GOOGLE_API_KEY` from a local `.env` (via `python-dotenv`) if present. Do not commit your `.env` file or your API keys to source control.
 
 Recommended (creates `.venv` and syncs deps via `uv`):
 
@@ -130,13 +133,20 @@ Build the image:
 make docker-build
 ```
 
-Run the container:
+Run the container (preferred: configure `GOOGLE_API_KEY` in your environment or `.env`):
 
 ```bash
-export OPENAI_API_KEY=YOUR_KEY
+# Unix/macOS
+export GOOGLE_API_KEY=YOUR_GOOGLE_KEY
 make docker-run
 # Open http://localhost:8501
+
+# Windows PowerShell
+$env:GOOGLE_API_KEY = 'YOUR_GOOGLE_KEY'
+make docker-run
 ```
+
+Note: The repository previously recommended `OPENAI_API_KEY` in some examples; that usage is deprecated. If you need to exercise legacy OpenAI paths, set `OPENAI_API_KEY`, but prefer `GOOGLE_API_KEY` for current development.
 
 ## Local container (Podman preferred)
 
@@ -177,14 +187,14 @@ The workflow `.github/workflows/ci.yml`:
 
 To enable GHCR pushes, ensure `packages: write` permission is available for the workflow and your repository is public or you have access rights.
 
-## OpenAI Agents SDK Integration
+## Runtime and provider guidance
 
-The agent is defined in `src/ci_agent/agent.py` with:
+This project now prefers Google Generative (Gemini) / ADK as the runtime for generation. Key points:
 
-- A meta-language instruction block that maps CI_* calls to structured outputs.
-- Optional function tools using `@function_tool` for schema-validated actions.
-- An input guardrail that classifies whether a request is competitive-intelligence related.
-- Execution via `Runner.run(ci_agent, user_input)`.
+- Primary (recommended) runtime: `google-generativeai` / ADK (Gemini) — the Streamlit UI and adapters will try to use `GOOGLE_API_KEY` and ADK/GenerativeModel APIs when enabled.
+- Legacy fallback: OpenAI/agents `Runner` integration is still present in `src/ci_agent/agent.py` for backward compatibility, but it is deprecated. The code attempts to lazily import the OpenAI/agents path only when Google is not requested.
+
+If you're migrating from an OpenAI-based run, set `GOOGLE_API_KEY` and prefer the Google ADK workflows. The adapter will attempt to discover a supported Gemini model via the SDK and pick an appropriate model (for example, `gemini-1.5` family) when `GOOGLE_MODEL` is not set.
 
 ## Development Notes
 
@@ -194,10 +204,20 @@ The agent is defined in `src/ci_agent/agent.py` with:
 
 ## Troubleshooting
 
-- If `uv sync` fails inside Docker due to network constraints, try building again or ensure no corporate proxy blocks downloads.
-- If the Agents SDK import path differs, update the `openai-agents` dependency and `from agents import ...` import statements.
-- For JSON output, ensure the requested `format` is `json` and that your model instructions return valid JSON.
+- If `uv sync` fails inside Docker due to network constraints, ensure your environment has access to PyPI or the package index used by `uv`.
+- If you see errors about missing `google.generativeai`, install the optional Google SDK into the uv-managed environment:
+
+  ```bash
+  UV_PROJECT_ENVIRONMENT=.venv uv pip install google-generativeai
+  ```
+
+- If the adapter prints a model-not-found or 404 error, the SDK may be talking to an API version that no longer exposes older models (for example `gemini-1.0`). Set `GOOGLE_MODEL` to a supported model name or allow the adapter to discover a supported model via `list_models()`.
+- If you encounter OpenAI 401s or other OpenAI errors unexpectedly, ensure you either:
+  - Set `GOOGLE_API_KEY` and enable the Google integration in the Streamlit UI (preferred), or
+  - Remove any placeholder `OPENAI_API_KEY` from your environment to avoid accidental initialization of legacy OpenAI clients.
+
+- For JSON output, ensure the requested `format` is `json` and that the model instructions return valid JSON.
 
 ## License
 
-MIT License. Replace with your preferred license.
+Copyright (c) 2025 Michael Nau

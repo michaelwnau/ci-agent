@@ -125,7 +125,6 @@ ci_agent = Agent(
 )
 
 
-
 async def demo():
     user_input = build_call(
         "CI_landscape",
